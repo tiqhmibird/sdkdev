@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Bucket": {
+      "type": "object",
+      "description": "Storage bucket configuration",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique bucket identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Bucket name"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Owner username"
+        },
+        "owner_id": {
+          "type": "string",
+          "description": "Owner user ID"
+        },
+        "public": {
+          "type": "boolean",
+          "description": "Whether bucket is publicly accessible"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["STANDARD", "ANALYTICS"],
+          "description": "Bucket type"
+        },
+        "file_size_limit": {
+          "type": ["integer", "null"],
+          "description": "Maximum file size in bytes"
+        },
+        "allowed_mime_types": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "List of allowed MIME types"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Bucket creation timestamp"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Bucket last update timestamp"
+        }
+      },
+      "required": ["id", "name"]
+    },
+    "StorageObject": {
+      "type": "object",
+      "description": "Storage object/file metadata",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Object name/path"
+        },
+        "bucket_id": {
+          "type": "string",
+          "description": "Bucket identifier"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Owner username"
+        },
+        "owner_id": {
+          "type": "string",
+          "description": "Owner user ID"
+        },
+        "version": {
+          "type": "string",
+          "description": "Object version"
+        },
+        "id": {
+          "type": ["string", "null"],
+          "description": "Unique object identifier"
+        },
+        "updated_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "created_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "last_accessed_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Last access timestamp"
+        },
+        "metadata": {
+          "type": ["object", "null"],
+          "additionalProperties": true,
+          "description": "Object metadata (size, mimetype, etc.)"
+        },
+        "user_metadata": {
+          "type": ["object", "null"],
+          "additionalProperties": true,
+          "description": "User-defined metadata"
+        }
+      },
+      "required": ["name"]
+    },
+    "StorageError": {
+      "type": "object",
+      "description": "Storage API error response",
+      "properties": {
+        "statusCode": {
+          "type": "string",
+          "description": "HTTP status code"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error type"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        }
+      },
+      "required": ["statusCode", "error", "message"]
+    },
+    "BucketType": {
+      "type": "string",
+      "enum": ["STANDARD", "ANALYTICS"],
+      "description": "Storage bucket type"
+    }
+  }
+}

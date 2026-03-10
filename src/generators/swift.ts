@@ -264,11 +264,28 @@ export class SwiftGenerator implements CodeGenerator {
   }
 
   private toSwiftName(name: string): string {
+    let swiftName = name
     if (name.includes('_')) {
       const parts = name.split('_')
-      return parts[0] + parts.slice(1).map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('')
+      swiftName = parts[0] + parts.slice(1).map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('')
     }
-    return name
+    return this.escapeSwiftKeyword(swiftName)
+  }
+
+  private escapeSwiftKeyword(name: string): string {
+    // List of Swift keywords that need escaping with backticks
+    const keywords = new Set([
+      'associatedtype', 'class', 'deinit', 'enum', 'extension', 'fileprivate',
+      'func', 'import', 'init', 'inout', 'internal', 'let', 'open', 'operator',
+      'private', 'precedencegroup', 'protocol', 'public', 'rethrows', 'static',
+      'struct', 'subscript', 'typealias', 'var', 'break', 'case', 'catch',
+      'continue', 'default', 'defer', 'do', 'else', 'fallthrough', 'for',
+      'guard', 'if', 'in', 'repeat', 'return', 'throw', 'switch', 'where',
+      'while', 'as', 'false', 'is', 'nil', 'self', 'Self', 'super', 'throws',
+      'true', 'try', 'await', 'async'
+    ])
+
+    return keywords.has(name) ? `\`${name}\`` : name
   }
 
   private toSwiftStaticName(value: string): string {
