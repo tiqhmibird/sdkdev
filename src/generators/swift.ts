@@ -23,7 +23,7 @@ export class SwiftGenerator implements CodeGenerator {
                          'public ' // Default to public for library code
 
     lines.push(`/// Represents any JSON value`)
-    lines.push(`${accessControl}indirect enum JSON: Codable, Equatable {`)
+    lines.push(`${accessControl}indirect enum JSON: Codable, Hashable {`)
     lines.push(`    case null`)
     lines.push(`    case bool(Bool)`)
     lines.push(`    case number(Double)`)
@@ -103,7 +103,7 @@ export class SwiftGenerator implements CodeGenerator {
     }
 
     if (definition.enum) {
-      lines.push(`${accessControl}struct ${name}: RawRepresentable, Codable, Equatable, Hashable, ExpressibleByStringLiteral {`)
+      lines.push(`${accessControl}struct ${name}: RawRepresentable, Codable, Hashable, Equatable, ExpressibleByStringLiteral {`)
       lines.push(`    ${accessControl}let rawValue: String`)
       lines.push(``)
 
@@ -125,7 +125,7 @@ export class SwiftGenerator implements CodeGenerator {
     }
 
     if (definition.oneOf) {
-      lines.push(`${accessControl}enum ${name}: Codable {`)
+      lines.push(`${accessControl}enum ${name}: Codable, Hashable {`)
       definition.oneOf.forEach((_, idx) => {
         lines.push(`    case variant${idx + 1}`)
       })
@@ -133,7 +133,7 @@ export class SwiftGenerator implements CodeGenerator {
       return lines.join('\n')
     }
 
-    lines.push(`${accessControl}struct ${name}: Codable {`)
+    lines.push(`${accessControl}struct ${name}: Codable, Hashable {`)
 
     if (definition.properties) {
       const codingKeyMappings: Array<{ swift: string; json: string }> = []
