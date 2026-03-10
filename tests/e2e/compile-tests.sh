@@ -3,12 +3,16 @@
 # End-to-End Compilation Tests
 # This script generates code for all supported languages and verifies it compiles
 
-set -e
+# Don't exit on error - we want to collect all test results
+set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT_DIR="$PROJECT_ROOT/tests/e2e/output"
 SCHEMAS_DIR="$PROJECT_ROOT/specs"
+
+# Change to project root to run npm commands
+cd "$PROJECT_ROOT"
 
 echo "===================================="
 echo "E2E Compilation Tests"
