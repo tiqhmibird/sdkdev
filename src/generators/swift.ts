@@ -133,7 +133,20 @@ export class SwiftGenerator implements CodeGenerator {
       return lines.join('\n')
     }
 
-    lines.push(`${accessControl}struct ${name}: Codable, Hashable {`)
+    // Check if type has non-optional id field for Identifiable conformance
+    let hasNonOptionalId = false
+    if (definition.properties && definition.properties['id']) {
+      const isIdRequired = definition.required?.includes('id')
+      if (isIdRequired) {
+        hasNonOptionalId = true
+      }
+    }
+
+    const conformances = hasNonOptionalId
+      ? `Codable, Hashable, Identifiable`
+      : `Codable, Hashable`
+
+    lines.push(`${accessControl}struct ${name}: ${conformances} {`)
 
     if (definition.properties) {
       const codingKeyMappings: Array<{ swift: string; json: string }> = []
