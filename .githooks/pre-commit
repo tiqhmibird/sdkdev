@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Pre-commit hook to run quick tests
+# Install with: ln -s ../../.githooks/pre-commit .git/hooks/pre-commit
+
+echo "Running quick e2e tests..."
+
+npm run test:quick
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Tests failed! Commit aborted."
+    echo "Fix the issues or use 'git commit --no-verify' to skip."
+    exit 1
+fi
+
+echo ""
+echo "✅ All tests passed!"
+exit 0

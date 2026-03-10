@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # Quick check job - runs on every commit
+  quick-check:
+    name: Quick Check (TypeScript, Python, Go)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Generate and test TypeScript
+        run: |
+          npm run generate -- generate -i specs/auth/schemas.json -o test-ts.ts -l typescript
+          npx tsc --noEmit --strict test-ts.ts
+
+      - name: Generate and test Python
+        run: |
+          npm run generate -- generate -i specs/auth/schemas.json -o test-py.py -l python
+          python3 -m py_compile test-py.py
+
+      - name: Generate and test Go
+        run: |
+          npm run generate -- generate -i specs/auth/schemas.json -o test-go.go -l go -n models
+          echo 'module test' > go.mod
+          echo 'go 1.21' >> go.mod
+          go build test-go.go
+
+  # Full test suite - runs on main/master only
+  full-tests:
+    name: Full E2E Tests
+    runs-on: ${{ matrix.os }}
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Setup Swift (macOS only)
+        if: runner.os == 'macOS'
+        run: swiftc --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run E2E tests
+        run: ./tests/e2e/compile-tests.sh
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-${{ matrix.os }}
+          path: tests/e2e/output/
+          retention-days: 7

@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.js
+*.d.ts
+*.map
+
+# Keep source files
+!src/**/*.ts
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+*.test.ts.snap
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Generated code (examples)
+test.*
+test-*
+output/
+examples/output/
+
+# Test output
+tests/e2e/output/
+*.jar
+go.sum
