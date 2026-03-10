@@ -16,6 +16,60 @@ export class SwiftGenerator implements CodeGenerator {
     lines.push('import Foundation')
     lines.push('')
 
+    // Add JSON enum for flexible types
+    const accessControl = options.accessControl === 'public' ? 'public ' :
+                         options.accessControl === 'private' ? 'private ' :
+                         options.accessControl === 'internal' ? 'internal ' :
+                         'public ' // Default to public for library code
+
+    lines.push(`/// Represents any JSON value`)
+    lines.push(`${accessControl}indirect enum JSON: Codable, Equatable {`)
+    lines.push(`    case null`)
+    lines.push(`    case bool(Bool)`)
+    lines.push(`    case number(Double)`)
+    lines.push(`    case string(String)`)
+    lines.push(`    case array([JSON])`)
+    lines.push(`    case object([String: JSON])`)
+    lines.push(``)
+    lines.push(`    ${accessControl}init(from decoder: Decoder) throws {`)
+    lines.push(`        let container = try decoder.singleValueContainer()`)
+    lines.push(`        if container.decodeNil() {`)
+    lines.push(`            self = .null`)
+    lines.push(`        } else if let bool = try? container.decode(Bool.self) {`)
+    lines.push(`            self = .bool(bool)`)
+    lines.push(`        } else if let number = try? container.decode(Double.self) {`)
+    lines.push(`            self = .number(number)`)
+    lines.push(`        } else if let string = try? container.decode(String.self) {`)
+    lines.push(`            self = .string(string)`)
+    lines.push(`        } else if let array = try? container.decode([JSON].self) {`)
+    lines.push(`            self = .array(array)`)
+    lines.push(`        } else if let object = try? container.decode([String: JSON].self) {`)
+    lines.push(`            self = .object(object)`)
+    lines.push(`        } else {`)
+    lines.push(`            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid JSON value")`)
+    lines.push(`        }`)
+    lines.push(`    }`)
+    lines.push(``)
+    lines.push(`    ${accessControl}func encode(to encoder: Encoder) throws {`)
+    lines.push(`        var container = encoder.singleValueContainer()`)
+    lines.push(`        switch self {`)
+    lines.push(`        case .null:`)
+    lines.push(`            try container.encodeNil()`)
+    lines.push(`        case .bool(let bool):`)
+    lines.push(`            try container.encode(bool)`)
+    lines.push(`        case .number(let number):`)
+    lines.push(`            try container.encode(number)`)
+    lines.push(`        case .string(let string):`)
+    lines.push(`            try container.encode(string)`)
+    lines.push(`        case .array(let array):`)
+    lines.push(`            try container.encode(array)`)
+    lines.push(`        case .object(let object):`)
+    lines.push(`            try container.encode(object)`)
+    lines.push(`        }`)
+    lines.push(`    }`)
+    lines.push(`}`)
+    lines.push('')
+
     if (!schema.definitions) {
       throw new Error('Schema must have definitions')
     }
@@ -133,8 +187,7 @@ export class SwiftGenerator implements CodeGenerator {
     }
 
     if (prop.oneOf) {
-      // Use String for flexible types (simple approximation that's Codable)
-      return optional ? 'String?' : 'String'
+      return optional ? 'JSON?' : 'JSON'
     }
 
     if (prop.enum) {
@@ -148,32 +201,28 @@ export class SwiftGenerator implements CodeGenerator {
           return `${this.mapType(nonNullTypes[0], prop)}?`
         }
       }
-      // Use String for flexible types (simple approximation that's Codable)
-      return optional ? 'String?' : 'String'
+      return optional ? 'JSON?' : 'JSON'
     }
 
-    const type = prop.type || 'String'
+    const type = prop.type || 'JSON'
 
     if (type === 'array') {
       if (prop.items) {
         const itemType = this.resolveType(prop.items, false)
         return optional ? `[${itemType}]?` : `[${itemType}]`
       }
-      // Use [String] for flexible array types (simple approximation that's Codable)
-      return optional ? '[String]?' : '[String]'
+      return optional ? '[JSON]?' : '[JSON]'
     }
 
     if (type === 'object') {
       if (prop.additionalProperties) {
         if (typeof prop.additionalProperties === 'boolean') {
-          // Use [String: String] for flexible dictionaries (simple approximation that's Codable)
-          return optional ? '[String: String]?' : '[String: String]'
+          return optional ? '[String: JSON]?' : '[String: JSON]'
         }
         const valueType = this.resolveType(prop.additionalProperties, false)
         return optional ? `[String: ${valueType}]?` : `[String: ${valueType}]`
       }
-      // Use [String: String] for flexible dictionaries (simple approximation that's Codable)
-      return optional ? '[String: String]?' : '[String: String]'
+      return optional ? '[String: JSON]?' : '[String: JSON]'
     }
 
     const mappedType = this.mapType(type, prop)
@@ -186,8 +235,8 @@ export class SwiftGenerator implements CodeGenerator {
       number: 'Double',
       integer: 'Int',
       boolean: 'Bool',
-      null: 'String',  // Use String for flexible types (Codable)
-      any: 'String',   // Use String for flexible types (Codable)
+      null: 'JSON',
+      any: 'JSON',
     }
 
     if (prop.format === 'date-time') {
@@ -198,7 +247,7 @@ export class SwiftGenerator implements CodeGenerator {
       return 'UUID'
     }
 
-    return typeMap[type] || 'String'  // Default to String (Codable)
+    return typeMap[type] || 'JSON'
   }
 
   private toSwiftName(name: string): string {
