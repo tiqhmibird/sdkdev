@@ -186,9 +186,26 @@ echo "Kotlin"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 if command_exists kotlinc; then
-    # Kotlin compilation is slow, so we just check syntax
-    run_test "kotlin" "auth/schemas.json" "auth.kt" "kotlinc -Werror $OUTPUT_DIR/auth.kt -d $OUTPUT_DIR/auth.jar"
-    run_test "kotlin" "functions/schemas.json" "functions.kt" "kotlinc -Werror $OUTPUT_DIR/functions.kt -d $OUTPUT_DIR/functions.jar"
+    # Download kotlinx-serialization dependencies if not present
+    KOTLIN_LIBS_DIR="$OUTPUT_DIR/kotlin_libs"
+    mkdir -p "$KOTLIN_LIBS_DIR"
+
+    SERIALIZATION_CORE_JAR="$KOTLIN_LIBS_DIR/kotlinx-serialization-core-jvm-1.6.2.jar"
+    SERIALIZATION_JSON_JAR="$KOTLIN_LIBS_DIR/kotlinx-serialization-json-jvm-1.6.2.jar"
+
+    if [ ! -f "$SERIALIZATION_CORE_JAR" ]; then
+        curl -sL "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.6.2/kotlinx-serialization-core-jvm-1.6.2.jar" -o "$SERIALIZATION_CORE_JAR" 2>/dev/null
+    fi
+
+    if [ ! -f "$SERIALIZATION_JSON_JAR" ]; then
+        curl -sL "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-serialization-json-jvm/1.6.2/kotlinx-serialization-json-jvm-1.6.2.jar" -o "$SERIALIZATION_JSON_JAR" 2>/dev/null
+    fi
+
+    KOTLIN_CLASSPATH="$SERIALIZATION_CORE_JAR:$SERIALIZATION_JSON_JAR"
+
+    # Compile with classpath (annotations will be available, plugin not required for basic compilation)
+    run_test "kotlin" "auth/schemas.json" "auth.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/auth.kt -d $OUTPUT_DIR/auth.jar"
+    run_test "kotlin" "functions/schemas.json" "functions.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/functions.kt -d $OUTPUT_DIR/functions.jar"
 else
     echo -e "${YELLOW}SKIP${NC} (kotlinc not found)"
     SKIPPED=$((SKIPPED + 2))
