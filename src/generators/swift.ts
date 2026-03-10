@@ -83,6 +83,7 @@ export class SwiftGenerator implements CodeGenerator {
 
     if (definition.properties) {
       const codingKeyMappings: Array<{ swift: string; json: string }> = []
+      let needsCodingKeys = false
 
       for (const [propName, prop] of Object.entries(definition.properties)) {
         const isRequired = definition.required?.includes(propName)
@@ -95,17 +96,26 @@ export class SwiftGenerator implements CodeGenerator {
         const swiftName = this.toSwiftName(propName)
         lines.push(`    ${accessControl}let ${swiftName}: ${type}`)
 
+        // Always add to mappings list
+        codingKeyMappings.push({ swift: swiftName, json: propName })
+
+        // Track if we need CodingKeys (when names differ)
         if (swiftName !== propName) {
-          codingKeyMappings.push({ swift: swiftName, json: propName })
+          needsCodingKeys = true
         }
       }
 
-      // Generate CodingKeys enum once if there are any mappings
-      if (codingKeyMappings.length > 0) {
+      // Generate CodingKeys enum if any property needs name mapping
+      // When present, CodingKeys must include ALL properties
+      if (needsCodingKeys) {
         lines.push(``)
         lines.push(`    enum CodingKeys: String, CodingKey {`)
         for (const mapping of codingKeyMappings) {
-          lines.push(`        case ${mapping.swift} = "${mapping.json}"`)
+          if (mapping.swift !== mapping.json) {
+            lines.push(`        case ${mapping.swift} = "${mapping.json}"`)
+          } else {
+            lines.push(`        case ${mapping.swift}`)
+          }
         }
         lines.push(`    }`)
       }
@@ -123,7 +133,8 @@ export class SwiftGenerator implements CodeGenerator {
     }
 
     if (prop.oneOf) {
-      return 'AnyCodable'
+      // Use String for flexible types (simple approximation that's Codable)
+      return optional ? 'String?' : 'String'
     }
 
     if (prop.enum) {
@@ -137,28 +148,32 @@ export class SwiftGenerator implements CodeGenerator {
           return `${this.mapType(nonNullTypes[0], prop)}?`
         }
       }
-      return optional ? 'AnyCodable?' : 'AnyCodable'
+      // Use String for flexible types (simple approximation that's Codable)
+      return optional ? 'String?' : 'String'
     }
 
-    const type = prop.type || 'AnyCodable'
+    const type = prop.type || 'String'
 
     if (type === 'array') {
       if (prop.items) {
         const itemType = this.resolveType(prop.items, false)
         return optional ? `[${itemType}]?` : `[${itemType}]`
       }
-      return optional ? '[AnyCodable]?' : '[AnyCodable]'
+      // Use [String] for flexible array types (simple approximation that's Codable)
+      return optional ? '[String]?' : '[String]'
     }
 
     if (type === 'object') {
       if (prop.additionalProperties) {
         if (typeof prop.additionalProperties === 'boolean') {
-          return optional ? '[String: AnyCodable]?' : '[String: AnyCodable]'
+          // Use [String: String] for flexible dictionaries (simple approximation that's Codable)
+          return optional ? '[String: String]?' : '[String: String]'
         }
         const valueType = this.resolveType(prop.additionalProperties, false)
         return optional ? `[String: ${valueType}]?` : `[String: ${valueType}]`
       }
-      return optional ? '[String: AnyCodable]?' : '[String: AnyCodable]'
+      // Use [String: String] for flexible dictionaries (simple approximation that's Codable)
+      return optional ? '[String: String]?' : '[String: String]'
     }
 
     const mappedType = this.mapType(type, prop)
@@ -171,8 +186,8 @@ export class SwiftGenerator implements CodeGenerator {
       number: 'Double',
       integer: 'Int',
       boolean: 'Bool',
-      null: 'AnyCodable',
-      any: 'AnyCodable',
+      null: 'String',  // Use String for flexible types (Codable)
+      any: 'String',   // Use String for flexible types (Codable)
     }
 
     if (prop.format === 'date-time') {
@@ -183,7 +198,7 @@ export class SwiftGenerator implements CodeGenerator {
       return 'UUID'
     }
 
-    return typeMap[type] || 'AnyCodable'
+    return typeMap[type] || 'String'  // Default to String (Codable)
   }
 
   private toSwiftName(name: string): string {

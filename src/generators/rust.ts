@@ -85,6 +85,8 @@ export class RustGenerator implements CodeGenerator {
         }
 
         const rustName = this.toSnakeCase(propName)
+        const escapedRustName = this.escapeRustKeyword(rustName)
+
         if (rustName !== propName) {
           lines.push(`    #[serde(rename = "${propName}")]`)
         }
@@ -93,7 +95,7 @@ export class RustGenerator implements CodeGenerator {
           lines.push(`    #[serde(skip_serializing_if = "Option::is_none")]`)
         }
 
-        lines.push(`    ${accessControl}${rustName}: ${type},`)
+        lines.push(`    ${accessControl}${escapedRustName}: ${type},`)
       }
     }
 
@@ -187,5 +189,19 @@ export class RustGenerator implements CodeGenerator {
 
   private toSnakeCase(name: string): string {
     return name.replace(/-/g, '_')
+  }
+
+  private escapeRustKeyword(name: string): string {
+    // List of Rust keywords that need escaping
+    const keywords = new Set([
+      'as', 'break', 'const', 'continue', 'crate', 'else', 'enum', 'extern',
+      'false', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop', 'match',
+      'mod', 'move', 'mut', 'pub', 'ref', 'return', 'self', 'Self', 'static',
+      'struct', 'super', 'trait', 'true', 'type', 'unsafe', 'use', 'where',
+      'while', 'async', 'await', 'dyn', 'abstract', 'become', 'box', 'do',
+      'final', 'macro', 'override', 'priv', 'typeof', 'unsized', 'virtual', 'yield'
+    ])
+
+    return keywords.has(name) ? `r#${name}` : name
   }
 }

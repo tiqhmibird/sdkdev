@@ -116,7 +116,8 @@ export class DartGenerator implements CodeGenerator {
     }
 
     if (prop.oneOf || prop.enum) {
-      return optional ? 'dynamic?' : 'dynamic'
+      // dynamic is already nullable in Dart, don't add ?
+      return 'dynamic'
     }
 
     if (Array.isArray(prop.type)) {
@@ -126,7 +127,8 @@ export class DartGenerator implements CodeGenerator {
           return `${this.mapType(nonNullTypes[0], prop)}?`
         }
       }
-      return optional ? 'dynamic?' : 'dynamic'
+      // dynamic is already nullable in Dart, don't add ?
+      return 'dynamic'
     }
 
     const type = prop.type || 'dynamic'
