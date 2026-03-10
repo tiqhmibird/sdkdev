@@ -1,6 +1,6 @@
 # @supabase/sdkdev
 
-[![CI](https://github.com/supabase/sdkdev/actions/workflows/ci.yml/badge.svg)](https://github.com/supabase/sdkdev/actions/workflows/ci.yml)
+[![CI](https://github.com/grdsdev/sdkdev/actions/workflows/ci.yml/badge.svg)](https://github.com/grdsdev/sdkdev/actions/workflows/ci.yml)
 
 SDK development tools for generating types from JSON schemas across multiple programming languages.
 
