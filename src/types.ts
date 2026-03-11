@@ -50,7 +50,22 @@ export type AccessControl =
   | 'package'     // Go (lowercase names)
 
 export interface CodegenOverrides {
-  enumNames?: Record<string, Record<string, string>>
+  enums?: {
+    // Rename enum values: { EnumName: { "original": "renamed" } }
+    names?: Record<string, Record<string, string>>
+    // Exclude enum values: { EnumName: ["value1", "value2"] }
+    exclude?: Record<string, string[]>
+  }
+
+  types?: {
+    // Exclude entire types from generation
+    exclude?: string[]
+  }
+
+  properties?: {
+    // Exclude specific properties from specific types: { TypeName: ["prop1", "prop2"] }
+    exclude?: Record<string, string[]>
+  }
 }
 
 export interface GeneratorOptions {

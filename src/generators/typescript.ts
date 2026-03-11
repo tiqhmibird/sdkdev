@@ -5,6 +5,12 @@ import {
   CodeGenerator,
   GeneratorOptions,
 } from '../types.js'
+import {
+  isTypeExcluded,
+  isPropertyExcluded,
+  filterEnumValues,
+  getEnumValueName,
+} from '../utils/overrides.js'
 
 export class TypeScriptGenerator implements CodeGenerator {
   generate(schema: JSONSchema, options: GeneratorOptions = {}): string {
@@ -19,6 +25,11 @@ export class TypeScriptGenerator implements CodeGenerator {
     }
 
     for (const [name, definition] of Object.entries(schema.definitions)) {
+      // Skip excluded types
+      if (isTypeExcluded(name, options.overrides)) {
+        continue
+      }
+
       lines.push(this.generateType(name, definition, options))
       lines.push('')
     }
@@ -46,7 +57,9 @@ export class TypeScriptGenerator implements CodeGenerator {
     }
 
     if (definition.enum) {
-      lines.push(`${accessControl}type ${name} = ${definition.enum.map((v) => `'${v}'`).join(' | ')}`)
+      // Filter out excluded enum values
+      const enumValues = filterEnumValues(name, definition.enum, options.overrides)
+      lines.push(`${accessControl}type ${name} = ${enumValues.map((v) => `'${v}'`).join(' | ')}`)
       return lines.join('\n')
     }
 
@@ -60,6 +73,11 @@ export class TypeScriptGenerator implements CodeGenerator {
 
     if (definition.properties) {
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const isRequired = definition.required?.includes(propName)
         const optional = isRequired ? '' : '?'
 

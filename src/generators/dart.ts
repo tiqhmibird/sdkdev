@@ -5,6 +5,12 @@ import {
   CodeGenerator,
   GeneratorOptions,
 } from '../types.js'
+import {
+  isTypeExcluded,
+  isPropertyExcluded,
+  filterEnumValues,
+  getEnumValueName,
+} from '../utils/overrides.js'
 
 export class DartGenerator implements CodeGenerator {
   generate(schema: JSONSchema, options: GeneratorOptions = {}): string {
@@ -19,6 +25,11 @@ export class DartGenerator implements CodeGenerator {
     }
 
     for (const [name, definition] of Object.entries(schema.definitions)) {
+      // Skip excluded types
+      if (isTypeExcluded(name, options.overrides)) {
+        continue
+      }
+
       lines.push(this.generateType(name, definition, options))
       lines.push('')
     }
@@ -45,7 +56,10 @@ export class DartGenerator implements CodeGenerator {
 
     if (definition.enum) {
       lines.push(`enum ${typeName} {`)
-      for (const value of definition.enum) {
+      // Filter out excluded enum values
+      const enumValues = filterEnumValues(name, definition.enum, options.overrides)
+
+      for (const value of enumValues) {
         const enumName = this.toDartEnumName(value, typeName, options)
         lines.push(`  ${enumName},`)
       }
@@ -63,6 +77,11 @@ export class DartGenerator implements CodeGenerator {
 
     if (definition.properties) {
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const isRequired = definition.required?.includes(propName)
         const type = this.resolveType(prop, !isRequired)
 
@@ -75,6 +94,7 @@ export class DartGenerator implements CodeGenerator {
 
       lines.push('')
       const params = Object.entries(definition.properties)
+        .filter(([propName]) => !isPropertyExcluded(name, propName, options.overrides))
         .map(([propName, _]) => {
           const isRequired = definition.required?.includes(propName)
           return isRequired ? `required this.${propName}` : `this.${propName}`
@@ -87,6 +107,11 @@ export class DartGenerator implements CodeGenerator {
       lines.push(`  factory ${typeName}.fromJson(Map<String, dynamic> json) {`)
       lines.push(`    return ${typeName}(`)
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const fromJson = this.generateFromJson(propName, prop)
         lines.push(`      ${propName}: ${fromJson},`)
       }
@@ -97,6 +122,11 @@ export class DartGenerator implements CodeGenerator {
       lines.push(`  Map<String, dynamic> toJson() {`)
       lines.push(`    return {`)
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const toJson = this.generateToJson(propName, prop)
         lines.push(`      '${propName}': ${toJson},`)
       }
@@ -202,8 +232,9 @@ export class DartGenerator implements CodeGenerator {
 
   private toDartEnumName(value: string, typeName?: string, options?: GeneratorOptions): string {
     // Check for override first
-    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
-      return options.overrides.enumNames[typeName][value]
+    const overrideName = typeName ? getEnumValueName(typeName, value, options?.overrides) : undefined
+    if (overrideName) {
+      return overrideName
     }
 
     // Remove any special characters that aren't valid in Dart identifiers

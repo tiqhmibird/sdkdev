@@ -5,6 +5,12 @@ import {
   CodeGenerator,
   GeneratorOptions,
 } from '../types.js'
+import {
+  isTypeExcluded,
+  isPropertyExcluded,
+  filterEnumValues,
+  getEnumValueName,
+} from '../utils/overrides.js'
 
 export class GoGenerator implements CodeGenerator {
   generate(schema: JSONSchema, options: GeneratorOptions = {}): string {
@@ -31,6 +37,11 @@ export class GoGenerator implements CodeGenerator {
     }
 
     for (const [name, definition] of Object.entries(schema.definitions)) {
+      // Skip excluded types
+      if (isTypeExcluded(name, options.overrides)) {
+        continue
+      }
+
       lines.push(this.generateType(name, definition, options))
       lines.push('')
     }
@@ -108,7 +119,11 @@ export class GoGenerator implements CodeGenerator {
       lines.push(`type ${typeName} string`)
       lines.push('')
       lines.push('const (')
-      for (const value of definition.enum) {
+
+      // Filter out excluded enum values
+      const enumValues = filterEnumValues(name, definition.enum, options.overrides)
+
+      for (const value of enumValues) {
         const constName = this.toConstName(value, typeName, options)
         lines.push(`    ${typeName}${constName} ${typeName} = "${value}"`)
       }
@@ -129,6 +144,11 @@ export class GoGenerator implements CodeGenerator {
 
     if (definition.properties) {
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const isRequired = definition.required?.includes(propName)
         const goName = this.toGoName(propName)
         const type = this.resolveType(prop, !isRequired)
@@ -226,8 +246,8 @@ export class GoGenerator implements CodeGenerator {
 
   private toConstName(value: string, typeName?: string, options?: GeneratorOptions): string {
     // Check for override first
-    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
-      const overrideName = options.overrides.enumNames[typeName][value]
+    const overrideName = typeName ? getEnumValueName(typeName, value, options?.overrides) : undefined
+    if (overrideName) {
       return overrideName.charAt(0).toUpperCase() + overrideName.slice(1)
     }
 

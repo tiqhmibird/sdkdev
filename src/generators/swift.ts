@@ -5,6 +5,12 @@ import {
   CodeGenerator,
   GeneratorOptions,
 } from '../types.js'
+import {
+  isTypeExcluded,
+  isPropertyExcluded,
+  filterEnumValues,
+  getEnumValueName,
+} from '../utils/overrides.js'
 
 export class SwiftGenerator implements CodeGenerator {
   generate(schema: JSONSchema, options: GeneratorOptions = {}): string {
@@ -75,6 +81,11 @@ export class SwiftGenerator implements CodeGenerator {
     }
 
     for (const [name, definition] of Object.entries(schema.definitions)) {
+      // Skip excluded types
+      if (isTypeExcluded(name, options.overrides)) {
+        continue
+      }
+
       lines.push(this.generateType(name, definition, options))
       lines.push('')
     }
@@ -107,7 +118,10 @@ export class SwiftGenerator implements CodeGenerator {
       lines.push(`    ${accessControl}let rawValue: String`)
       lines.push(``)
 
-      for (const value of definition.enum) {
+      // Filter out excluded enum values
+      const enumValues = filterEnumValues(name, definition.enum, options.overrides)
+
+      for (const value of enumValues) {
         const staticName = this.toSwiftStaticName(value, name, options)
         lines.push(`    ${accessControl}static let ${staticName} = ${name}(rawValue: "${value}")`)
       }
@@ -153,6 +167,11 @@ export class SwiftGenerator implements CodeGenerator {
       let needsCodingKeys = false
 
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const isRequired = definition.required?.includes(propName)
         const type = this.resolveType(prop, !isRequired)
 
@@ -289,9 +308,10 @@ export class SwiftGenerator implements CodeGenerator {
   }
 
   private toSwiftStaticName(value: string, typeName?: string, options?: GeneratorOptions): string {
-    // Check for override first
-    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
-      return options.overrides.enumNames[typeName][value]
+    // Check for override first using the helper function
+    const overrideName = typeName ? getEnumValueName(typeName, value, options?.overrides) : undefined
+    if (overrideName) {
+      return overrideName
     }
 
     // Convert kebab-case or snake_case to camelCase for Swift static property names

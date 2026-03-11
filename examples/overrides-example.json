@@ -1,0 +1,72 @@
+{
+  "$comment": "Example override file demonstrating all customization options",
+
+  "enums": {
+    "names": {
+      "PostgresChangeEvent": {
+        "$comment": "Rename special character * to 'all'",
+        "*": "all"
+      },
+      "Region": {
+        "$comment": "Convert kebab-case to camelCase-friendly names",
+        "us-east-1": "usEast1",
+        "us-west-2": "usWest2",
+        "eu-central-1": "euCentral1"
+      },
+      "HttpMethod": {
+        "$comment": "Use more semantic names",
+        "DELETE": "remove",
+        "PATCH": "update"
+      }
+    },
+    "exclude": {
+      "$comment": "Remove deprecated or internal enum values",
+      "FeatureFlag": [
+        "experimental_v1",
+        "internal_debug",
+        "deprecated_feature"
+      ],
+      "Status": [
+        "internal_processing",
+        "debug_mode"
+      ]
+    }
+  },
+
+  "types": {
+    "$comment": "Exclude entire types from generation",
+    "exclude": [
+      "InternalMetrics",
+      "DebugResponse",
+      "LegacyConfig",
+      "DeprecatedUser",
+      "ServerOnlyState"
+    ]
+  },
+
+  "properties": {
+    "$comment": "Exclude specific properties from types",
+    "exclude": {
+      "User": [
+        "password_hash",
+        "salt",
+        "internal_id",
+        "server_metadata"
+      ],
+      "Session": [
+        "server_state",
+        "internal_flags",
+        "debug_info"
+      ],
+      "Config": [
+        "deprecated_timeout",
+        "internal_retry_logic",
+        "debug_mode"
+      ],
+      "ApiResponse": [
+        "server_timing",
+        "internal_trace_id"
+      ]
+    }
+  }
+}

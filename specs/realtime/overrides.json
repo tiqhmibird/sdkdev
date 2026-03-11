@@ -1,7 +1,9 @@
 {
-  "enumNames": {
-    "PostgresChangeEvent": {
-      "*": "all"
+  "enums": {
+    "names": {
+      "PostgresChangeEvent": {
+        "*": "all"
+      }
     }
   }
 }

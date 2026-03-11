@@ -5,6 +5,12 @@ import {
   CodeGenerator,
   GeneratorOptions,
 } from '../types.js'
+import {
+  isTypeExcluded,
+  isPropertyExcluded,
+  filterEnumValues,
+  getEnumValueName,
+} from '../utils/overrides.js'
 
 export class PythonGenerator implements CodeGenerator {
   generate(schema: JSONSchema, options: GeneratorOptions = {}): string {
@@ -23,6 +29,11 @@ export class PythonGenerator implements CodeGenerator {
     }
 
     for (const [name, definition] of Object.entries(schema.definitions)) {
+      // Skip excluded types
+      if (isTypeExcluded(name, options.overrides)) {
+        continue
+      }
+
       lines.push(this.generateType(name, definition, options))
       lines.push('')
     }
@@ -42,7 +53,11 @@ export class PythonGenerator implements CodeGenerator {
       if (definition.description) {
         lines.push(`    """${definition.description}"""`)
       }
-      for (const value of definition.enum) {
+
+      // Filter out excluded enum values
+      const enumValues = filterEnumValues(name, definition.enum, options.overrides)
+
+      for (const value of enumValues) {
         const constName = this.toPythonConstName(value, name, options)
         lines.push(`    ${constName} = "${value}"`)
       }
@@ -75,6 +90,11 @@ export class PythonGenerator implements CodeGenerator {
       }
 
       for (const [propName, prop] of Object.entries(definition.properties)) {
+        // Skip excluded properties
+        if (isPropertyExcluded(name, propName, options.overrides)) {
+          continue
+        }
+
         const isRequired = definition.required?.includes(propName)
         const baseType = this.resolveType(prop, false)
 
@@ -182,8 +202,9 @@ export class PythonGenerator implements CodeGenerator {
 
   private toPythonConstName(value: string, typeName?: string, options?: GeneratorOptions): string {
     // Check for override first
-    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
-      return options.overrides.enumNames[typeName][value].toUpperCase()
+    const overrideName = typeName ? getEnumValueName(typeName, value, options?.overrides) : undefined
+    if (overrideName) {
+      return overrideName.toUpperCase()
     }
 
     // Remove any special characters that aren't valid in Python identifiers

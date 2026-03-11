@@ -5,6 +5,12 @@ import {
   CodeGenerator,
   GeneratorOptions,
 } from '../types.js'
+import {
+  isTypeExcluded,
+  isPropertyExcluded,
+  filterEnumValues,
+  getEnumValueName,
+} from '../utils/overrides.js'
 
 export class KotlinGenerator implements CodeGenerator {
   generate(schema: JSONSchema, options: GeneratorOptions = {}): string {
@@ -25,6 +31,11 @@ export class KotlinGenerator implements CodeGenerator {
     }
 
     for (const [name, definition] of Object.entries(schema.definitions)) {
+      // Skip excluded types
+      if (isTypeExcluded(name, options.overrides)) {
+        continue
+      }
+
       lines.push(this.generateType(name, definition, options))
       lines.push('')
     }
@@ -59,7 +70,11 @@ export class KotlinGenerator implements CodeGenerator {
 
     if (definition.enum) {
       lines.push(`${accessControl}enum class ${name}(val value: String) {`)
-      for (const value of definition.enum) {
+
+      // Filter out excluded enum values
+      const enumValues = filterEnumValues(name, definition.enum, options.overrides)
+
+      for (const value of enumValues) {
         const enumName = this.toKotlinEnumName(value, name, options)
         lines.push(`    @SerialName("${value}")`)
         lines.push(`    ${enumName}("${value}"),`)
@@ -77,7 +92,9 @@ export class KotlinGenerator implements CodeGenerator {
     lines.push(`${accessControl}data class ${name}(`)
 
     if (definition.properties) {
-      const props = Object.entries(definition.properties)
+      const props = Object.entries(definition.properties).filter(
+        ([propName]) => !isPropertyExcluded(name, propName, options.overrides)
+      )
       for (let i = 0; i < props.length; i++) {
         const [propName, prop] = props[i]
         const isRequired = definition.required?.includes(propName)
@@ -178,8 +195,9 @@ export class KotlinGenerator implements CodeGenerator {
 
   private toKotlinEnumName(value: string, typeName?: string, options?: GeneratorOptions): string {
     // Check for override first
-    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
-      return options.overrides.enumNames[typeName][value].toUpperCase()
+    const overrideName = typeName ? getEnumValueName(typeName, value, options?.overrides) : undefined
+    if (overrideName) {
+      return overrideName.toUpperCase()
     }
 
     // Remove any special characters that aren't valid in Kotlin identifiers
