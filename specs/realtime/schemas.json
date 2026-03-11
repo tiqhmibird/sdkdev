@@ -1,0 +1,648 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://supabase.com/schemas/realtime-protocol.json",
+  "title": "Supabase Realtime Protocol",
+  "description": "JSON Schema for Supabase Realtime WebSocket protocol messages supporting versions 1.0.0 and 2.0.0",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/ProtocolV1Message"
+    },
+    {
+      "$ref": "#/definitions/ProtocolV2Message"
+    }
+  ],
+  "definitions": {
+    "RealtimeEventType": {
+      "type": "string",
+      "description": "Realtime protocol event types",
+      "enum": [
+        "phx_join",
+        "phx_leave",
+        "phx_close",
+        "phx_error",
+        "phx_reply",
+        "heartbeat",
+        "access_token",
+        "broadcast",
+        "presence",
+        "presence_state",
+        "presence_diff",
+        "postgres_changes",
+        "system"
+      ]
+    },
+    "PostgresChangeEvent": {
+      "type": "string",
+      "description": "Postgres database change event types",
+      "enum": ["INSERT", "UPDATE", "DELETE", "*"]
+    },
+    "ReplyStatus": {
+      "type": "string",
+      "description": "Reply status types",
+      "enum": ["ok", "error"]
+    },
+    "SystemStatus": {
+      "type": "string",
+      "description": "System status types",
+      "enum": ["ok", "error", "timeout"]
+    },
+    "ProtocolV1Message": {
+      "type": "object",
+      "description": "Protocol version 1.0.0 message format (JSON object)",
+      "required": ["event", "topic", "payload"],
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/RealtimeEventType",
+          "description": "The type of event being sent or received"
+        },
+        "topic": {
+          "type": "string",
+          "description": "The topic to which the message belongs",
+          "pattern": "^(phoenix|realtime:.+)$"
+        },
+        "payload": {
+          "description": "The data associated with the event"
+        },
+        "ref": {
+          "type": ["string", "null"],
+          "description": "A unique reference ID for the message"
+        },
+        "join_ref": {
+          "type": ["string", "null"],
+          "description": "A unique reference ID to identify a joined topic"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "phx_join" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/PHXJoinPayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "phx_leave" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "type": "object" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "phx_close" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "type": "object" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "phx_error" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "type": "object" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "phx_reply" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/PHXReplyPayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "heartbeat" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "type": "object" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "access_token" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/AccessTokenPayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "broadcast" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/BroadcastPayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "presence" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/PresencePayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "presence_state" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/PresenceStatePayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "presence_diff" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/PresenceDiffPayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "postgres_changes" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/PostgresChangesPayload" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event": { "const": "system" }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": { "$ref": "#/definitions/SystemPayload" }
+            }
+          }
+        }
+      ]
+    },
+    "ProtocolV2Message": {
+      "type": "array",
+      "description": "Protocol version 2.0.0 message format (JSON array)",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": [
+        {
+          "type": ["string", "null"],
+          "description": "join_ref - A unique reference ID to identify a joined topic"
+        },
+        {
+          "type": ["string", "null"],
+          "description": "ref - A unique reference ID for the message"
+        },
+        {
+          "type": "string",
+          "description": "topic - The topic to which the message belongs",
+          "pattern": "^(phoenix|realtime:.+)$"
+        },
+        {
+          "$ref": "#/definitions/RealtimeEventType",
+          "description": "event - The type of event being sent or received"
+        },
+        {
+          "description": "payload - The data associated with the event"
+        }
+      ]
+    },
+    "BroadcastReplayConfig": {
+      "type": "object",
+      "description": "Configuration options for broadcast replay",
+      "required": ["since"],
+      "properties": {
+        "since": {
+          "type": "integer",
+          "description": "Replay messages since a specific timestamp in milliseconds"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Limit the number of replayed messages"
+        }
+      }
+    },
+    "BroadcastConfig": {
+      "type": "object",
+      "description": "Configuration options for broadcasting messages",
+      "properties": {
+        "ack": {
+          "type": "boolean",
+          "description": "Acknowledge broadcast messages"
+        },
+        "self": {
+          "type": "boolean",
+          "description": "Include the sender in broadcast messages"
+        },
+        "replay": {
+          "$ref": "#/definitions/BroadcastReplayConfig"
+        }
+      }
+    },
+    "PresenceConfig": {
+      "type": "object",
+      "description": "Configuration options for presence tracking",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether presence tracking is enabled for this channel"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key to be used for presence tracking, if not specified a UUID will be generated"
+        }
+      }
+    },
+    "PostgresChangesConfig": {
+      "type": "object",
+      "description": "Configuration for Postgres changes subscription",
+      "required": ["event", "schema", "table"],
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/PostgresChangeEvent",
+          "description": "Database change event to listen to"
+        },
+        "schema": {
+          "type": "string",
+          "description": "Schema of the table to listen to, accepts * wildcard"
+        },
+        "table": {
+          "type": "string",
+          "description": "Table of the database to listen to, accepts * wildcard"
+        },
+        "filter": {
+          "type": "string",
+          "description": "Filter to be used when pulling changes from database"
+        }
+      }
+    },
+    "ChannelConfig": {
+      "type": "object",
+      "description": "Channel configuration options",
+      "properties": {
+        "broadcast": {
+          "$ref": "#/definitions/BroadcastConfig"
+        },
+        "presence": {
+          "$ref": "#/definitions/PresenceConfig"
+        },
+        "postgres_changes": {
+          "type": "array",
+          "description": "Array of configurations for Postgres changes",
+          "items": {
+            "$ref": "#/definitions/PostgresChangesConfig"
+          }
+        },
+        "private": {
+          "type": "boolean",
+          "description": "Whether the channel is private"
+        }
+      }
+    },
+    "PHXJoinPayload": {
+      "type": "object",
+      "description": "Payload for phx_join event to configure channel features",
+      "required": ["config"],
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/ChannelConfig"
+        },
+        "access_token": {
+          "type": "string",
+          "description": "Optional access token for authentication"
+        }
+      }
+    },
+    "PostgresChangesSubscription": {
+      "type": "object",
+      "description": "Postgres changes subscription information",
+      "required": ["id", "event", "schema", "table"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Unique identifier for the Postgres changes subscription"
+        },
+        "event": {
+          "$ref": "#/definitions/PostgresChangeEvent",
+          "description": "The type of event the client is subscribed to"
+        },
+        "schema": {
+          "type": "string",
+          "description": "The schema of the table the client is subscribed to"
+        },
+        "table": {
+          "type": "string",
+          "description": "The table the client is subscribed to"
+        }
+      }
+    },
+    "PHXJoinReplyResponse": {
+      "type": "object",
+      "description": "Response data for phx_join reply",
+      "properties": {
+        "postgres_changes": {
+          "type": "array",
+          "description": "Array of Postgres changes that the client is subscribed to",
+          "items": {
+            "$ref": "#/definitions/PostgresChangesSubscription"
+          }
+        }
+      }
+    },
+    "PHXReplyPayload": {
+      "type": "object",
+      "description": "Response to a client request",
+      "required": ["status", "response"],
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/ReplyStatus",
+          "description": "The status of the response"
+        },
+        "response": {
+          "description": "The response data"
+        }
+      }
+    },
+    "AccessTokenPayload": {
+      "type": "object",
+      "description": "Payload for access_token event",
+      "required": ["access_token"],
+      "properties": {
+        "access_token": {
+          "type": "string",
+          "description": "The new access token to be used for authentication"
+        }
+      }
+    },
+    "BroadcastMeta": {
+      "type": "object",
+      "description": "Metadata about the broadcast message",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "A unique identifier for the broadcast message"
+        },
+        "replayed": {
+          "type": "boolean",
+          "description": "Whether the message is a replayed message"
+        }
+      }
+    },
+    "BroadcastPayload": {
+      "type": "object",
+      "description": "Payload for broadcast event",
+      "required": ["type", "event"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "broadcast",
+          "description": "The type of message, must always be broadcast"
+        },
+        "event": {
+          "type": "string",
+          "description": "The name of the user event to broadcast"
+        },
+        "payload": {
+          "description": "The user data associated with the event"
+        },
+        "meta": {
+          "$ref": "#/definitions/BroadcastMeta"
+        }
+      }
+    },
+    "PresencePayload": {
+      "type": "object",
+      "description": "Payload for presence event to track metadata",
+      "required": ["type", "event", "payload"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "presence",
+          "description": "The type of message, must always be presence"
+        },
+        "event": {
+          "type": "string",
+          "const": "track",
+          "description": "The presence event type"
+        },
+        "payload": {
+          "type": "object",
+          "description": "The presence metadata to be tracked",
+          "additionalProperties": true
+        }
+      }
+    },
+    "PresenceMeta": {
+      "type": "object",
+      "description": "Presence metadata for a single connection",
+      "required": ["phx_ref"],
+      "properties": {
+        "phx_ref": {
+          "type": "string",
+          "description": "A unique reference ID for the metadata"
+        }
+      },
+      "additionalProperties": true
+    },
+    "PresenceInfo": {
+      "type": "object",
+      "description": "Presence information for a user or client",
+      "required": ["metas"],
+      "properties": {
+        "metas": {
+          "type": "array",
+          "description": "Array of presence metadata entries",
+          "items": {
+            "$ref": "#/definitions/PresenceMeta"
+          }
+        }
+      }
+    },
+    "PresenceStatePayload": {
+      "type": "object",
+      "description": "Payload for presence_state event containing current presence information",
+      "additionalProperties": {
+        "$ref": "#/definitions/PresenceInfo"
+      }
+    },
+    "PresenceDiffPayload": {
+      "type": "object",
+      "description": "Payload for presence_diff event containing changes to presence state",
+      "required": ["joins", "leaves"],
+      "properties": {
+        "joins": {
+          "type": "object",
+          "description": "Metadata for clients that have joined the channel",
+          "additionalProperties": {
+            "$ref": "#/definitions/PresenceInfo"
+          }
+        },
+        "leaves": {
+          "type": "object",
+          "description": "Metadata for clients that have left the channel",
+          "additionalProperties": {
+            "$ref": "#/definitions/PresenceInfo"
+          }
+        }
+      }
+    },
+    "PostgresColumnDefinition": {
+      "type": "object",
+      "description": "Column definition in a Postgres table",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the column"
+        },
+        "type": {
+          "type": "string",
+          "description": "The data type of the column"
+        }
+      }
+    },
+    "PostgresRecord": {
+      "type": "object",
+      "description": "A record from a Postgres table",
+      "additionalProperties": {
+        "type": ["boolean", "number", "string", "null"]
+      }
+    },
+    "PostgresChangesData": {
+      "type": "object",
+      "description": "Detailed information about a Postgres change event",
+      "required": ["schema", "table", "commit_timestamp", "type"],
+      "properties": {
+        "schema": {
+          "type": "string",
+          "description": "The schema of the table where the change occurred"
+        },
+        "table": {
+          "type": "string",
+          "description": "The table where the change occurred"
+        },
+        "commit_timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the change was committed to the database"
+        },
+        "type": {
+          "$ref": "#/definitions/PostgresChangeEvent",
+          "description": "The type of event that occurred"
+        },
+        "columns": {
+          "type": "array",
+          "description": "Array of objects representing the columns of the table",
+          "items": {
+            "$ref": "#/definitions/PostgresColumnDefinition"
+          }
+        },
+        "record": {
+          "$ref": "#/definitions/PostgresRecord",
+          "description": "The new values after the change"
+        },
+        "old_record": {
+          "$ref": "#/definitions/PostgresRecord",
+          "description": "The old values before the change"
+        },
+        "errors": {
+          "type": ["string", "null"],
+          "description": "Any errors that occurred during the change"
+        }
+      }
+    },
+    "PostgresChangesPayload": {
+      "type": "object",
+      "description": "Payload for postgres_changes event containing database change details",
+      "required": ["ids", "data"],
+      "properties": {
+        "ids": {
+          "type": "array",
+          "description": "Array of unique identifiers matching the subscription",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "data": {
+          "$ref": "#/definitions/PostgresChangesData"
+        }
+      }
+    },
+    "SystemPayload": {
+      "type": "object",
+      "description": "Payload for system event containing status information",
+      "required": ["status", "extension"],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "A human-readable message describing the status"
+        },
+        "status": {
+          "$ref": "#/definitions/SystemStatus",
+          "description": "The status of the subscription"
+        },
+        "extension": {
+          "type": "string",
+          "description": "The extension that sent the message"
+        },
+        "channel": {
+          "type": "string",
+          "description": "The channel to which the message belongs"
+        }
+      }
+    }
+  }
+}

@@ -17,6 +17,7 @@ program
   .requiredOption('-l, --language <lang>', 'Target language (typescript, python, go, dart, swift, kotlin, rust)')
   .option('-n, --namespace <name>', 'Namespace/module name for generated code')
   .option('-a, --access <control>', 'Access control (public, private, internal, protected, export, package)')
+  .option('--overrides <path>', 'Path to overrides JSON file for customizing code generation')
   .action(async (options) => {
     try {
       const schemaPath = resolve(process.cwd(), options.input)
@@ -26,10 +27,20 @@ program
       const schemaContent = readFileSync(schemaPath, 'utf-8')
       const schema = JSON.parse(schemaContent)
 
+      // Load overrides if provided
+      let overrides = undefined
+      if (options.overrides) {
+        const overridesPath = resolve(process.cwd(), options.overrides)
+        console.log(`Loading overrides from: ${overridesPath}`)
+        const overridesContent = readFileSync(overridesPath, 'utf-8')
+        overrides = JSON.parse(overridesContent)
+      }
+
       console.log(`Generating ${options.language} code...`)
       const code = generateCode(schema, options.language, {
         namespace: options.namespace,
         accessControl: options.access,
+        overrides,
       })
 
       const fs = await import('fs')

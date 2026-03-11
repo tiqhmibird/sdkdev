@@ -42,7 +42,7 @@ export class PythonGenerator implements CodeGenerator {
         lines.push(`    """${definition.description}"""`)
       }
       for (const value of definition.enum) {
-        const constName = value.toUpperCase().replace(/-/g, '_')
+        const constName = this.toPythonConstName(value, name, options)
         lines.push(`    ${constName} = "${value}"`)
       }
       return lines.join('\n')
@@ -158,5 +158,16 @@ export class PythonGenerator implements CodeGenerator {
     }
 
     return typeMap[type] || 'Any'
+  }
+
+  private toPythonConstName(value: string, typeName?: string, options?: GeneratorOptions): string {
+    // Check for override first
+    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
+      return options.overrides.enumNames[typeName][value].toUpperCase()
+    }
+
+    // Remove any special characters that aren't valid in Python identifiers
+    const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '')
+    return sanitized.toUpperCase().replace(/-/g, '_')
   }
 }

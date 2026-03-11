@@ -354,8 +354,12 @@ sdkdev/
 ├── specs/
 │   ├── auth/
 │   │   └── schemas.json    # Auth schemas
-│   └── functions/
-│       └── schemas.json    # Functions schemas
+│   ├── functions/
+│   │   └── schemas.json    # Functions schemas
+│   ├── storage/
+│   │   └── schemas.json    # Storage schemas
+│   └── realtime/
+│       └── schemas.json    # Realtime protocol schemas
 ├── package.json
 ├── tsconfig.json
 └── README.md

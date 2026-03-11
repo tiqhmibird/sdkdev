@@ -108,7 +108,7 @@ export class SwiftGenerator implements CodeGenerator {
       lines.push(``)
 
       for (const value of definition.enum) {
-        const staticName = this.toSwiftStaticName(value)
+        const staticName = this.toSwiftStaticName(value, name, options)
         lines.push(`    ${accessControl}static let ${staticName} = ${name}(rawValue: "${value}")`)
       }
 
@@ -288,14 +288,21 @@ export class SwiftGenerator implements CodeGenerator {
     return keywords.has(name) ? `\`${name}\`` : name
   }
 
-  private toSwiftStaticName(value: string): string {
+  private toSwiftStaticName(value: string, typeName?: string, options?: GeneratorOptions): string {
+    // Check for override first
+    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
+      return options.overrides.enumNames[typeName][value]
+    }
+
     // Convert kebab-case or snake_case to camelCase for Swift static property names
     // e.g., "ap-northeast-1" -> "apNortheast1"
     // e.g., "us_west_2" -> "usWest2"
-    const normalized = value.replace(/[-_]/g, ' ')
-    const parts = normalized.split(' ')
+    // Remove any special characters that aren't valid in Swift identifiers
+    const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '')
+    const normalized = sanitized.replace(/[-_]/g, ' ')
+    const parts = normalized.split(' ').filter(p => p.length > 0)
 
-    if (parts.length === 0) return value
+    if (parts.length === 0) return 'value'
 
     // First part stays lowercase, rest are capitalized
     return parts[0].toLowerCase() +

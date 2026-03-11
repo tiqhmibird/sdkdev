@@ -49,11 +49,16 @@ export type AccessControl =
   | 'export'      // TypeScript (default)
   | 'package'     // Go (lowercase names)
 
+export interface CodegenOverrides {
+  enumNames?: Record<string, Record<string, string>>
+}
+
 export interface GeneratorOptions {
   namespace?: string
   includeComments?: boolean
   includeValidation?: boolean
   accessControl?: AccessControl
+  overrides?: CodegenOverrides
 }
 
 export interface CodeGenerator {

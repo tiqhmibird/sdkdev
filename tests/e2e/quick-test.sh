@@ -63,11 +63,15 @@ test_language() {
 # TypeScript
 test_language "typescript" "auth/schemas.json" "auth.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/auth.ts"
 test_language "typescript" "functions/schemas.json" "functions.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/functions.ts"
+test_language "typescript" "storage/schemas.json" "storage.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/storage.ts"
+test_language "typescript" "realtime/schemas.json" "realtime.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/realtime.ts"
 
 # Python
 if command -v python3 > /dev/null; then
     test_language "python" "auth/schemas.json" "auth.py" "python3 -m py_compile $OUTPUT_DIR/auth.py"
     test_language "python" "functions/schemas.json" "functions.py" "python3 -m py_compile $OUTPUT_DIR/functions.py"
+    test_language "python" "storage/schemas.json" "storage.py" "python3 -m py_compile $OUTPUT_DIR/storage.py"
+    test_language "python" "realtime/schemas.json" "realtime.py" "python3 -m py_compile $OUTPUT_DIR/realtime.py"
 else
     echo "Python 3 not found"
     exit 1
@@ -83,6 +87,8 @@ if command -v go > /dev/null; then
 
     test_language "go" "auth/schemas.json" "auth.go" "cd $OUTPUT_DIR && go build auth.go"
     test_language "go" "functions/schemas.json" "functions.go" "cd $OUTPUT_DIR && go build functions.go"
+    test_language "go" "storage/schemas.json" "storage.go" "cd $OUTPUT_DIR && go build storage.go"
+    test_language "go" "realtime/schemas.json" "realtime.go" "cd $OUTPUT_DIR && go build realtime.go"
 else
     echo "Go not found"
     exit 1

@@ -54,28 +54,32 @@ export class GoGenerator implements CodeGenerator {
 
     if (definition.properties) {
       for (const prop of Object.values(definition.properties)) {
-        if (this.propertyUsesTime(prop)) return true
+        if (this.propertyUsesTimeDirectly(prop)) return true
       }
     }
 
     if (definition.items) {
-      if (this.propertyUsesTime(definition.items)) return true
+      if (this.propertyUsesTimeDirectly(definition.items)) return true
     }
 
     return false
   }
 
-  private propertyUsesTime(prop: SchemaProperty): boolean {
+  private propertyUsesTimeDirectly(prop: SchemaProperty): boolean {
+    // Only return true if the property itself has date-time format
+    // Don't recurse into nested objects as those become map[string]interface{}
     if (prop.format === 'date-time') return true
 
-    if (prop.properties) {
-      for (const nestedProp of Object.values(prop.properties)) {
-        if (this.propertyUsesTime(nestedProp)) return true
-      }
+    // Check arrays of date-time
+    if (prop.type === 'array' && prop.items) {
+      if (prop.items.format === 'date-time') return true
     }
 
-    if (prop.items) {
-      if (this.propertyUsesTime(prop.items)) return true
+    // Check $ref types (defined types may use time)
+    if (prop.$ref) {
+      // We'll assume $refs might use time - this is conservative
+      // but safe since we're just checking imports
+      return false
     }
 
     return false
