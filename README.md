@@ -9,7 +9,7 @@ SDK development tools for generating types from JSON schemas across multiple pro
 - Generate type definitions from JSON Schema
 - Support for 7 programming languages:
   - TypeScript - Interfaces with JSDoc
-  - Python - TypedDict with type hints
+  - Python - Pydantic BaseModel with validation and Field descriptions
   - Go - Structs with JSON tags
   - Dart - Classes with fromJson/toJson
   - Swift - Structs with Codable (enums as RawRepresentable structs)
@@ -94,13 +94,16 @@ npm run generate -- generate \
 Output:
 ```python
 from typing import Optional, List, Dict
+from pydantic import BaseModel, Field
 
-class User(TypedDict):
+class User(BaseModel):
     """User account information"""
-    id: str
-    email: Optional[str]
-    phone: Optional[str]
+    id: str = Field(description="Unique identifier")
+    email: Optional[str] = Field(default=None, description="Email address")
+    phone: Optional[str] = None
 ```
+
+**Note**: Pydantic is required for generated Python code: `pip install pydantic`
 
 ### Go
 

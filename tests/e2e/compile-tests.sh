@@ -40,6 +40,7 @@ run_test() {
     local schema=$2
     local output_file=$3
     local compile_cmd=$4
+    local overrides_flag=${5:-""}
     local test_name="$language ($schema)"
 
     echo -n "Testing $test_name... "
@@ -49,7 +50,8 @@ run_test() {
         -i "$SCHEMAS_DIR/$schema" \
         -o "$OUTPUT_DIR/$output_file" \
         -l "$language" \
-        -n "test_models" > /dev/null 2>&1
+        -n "test_models" \
+        $overrides_flag > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
         echo -e "${RED}FAIL${NC} (generation failed)"
@@ -93,7 +95,7 @@ if command_exists tsc; then
     run_test "typescript" "auth/schemas.json" "auth.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/auth.ts"
     run_test "typescript" "functions/schemas.json" "functions.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/functions.ts"
     run_test "typescript" "storage/schemas.json" "storage.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/storage.ts"
-    run_test "typescript" "realtime/schemas.json" "realtime.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/realtime.ts"
+    run_test "typescript" "realtime/schemas.json" "realtime.ts" "npx tsc --noEmit --strict $OUTPUT_DIR/realtime.ts" "--overrides specs/realtime/overrides.json"
 else
     echo -e "${YELLOW}SKIP${NC} (tsc not found)"
     SKIPPED=$((SKIPPED + 4))
@@ -111,7 +113,7 @@ if command_exists python3; then
     run_test "python" "auth/schemas.json" "auth.py" "python3 -m py_compile $OUTPUT_DIR/auth.py"
     run_test "python" "functions/schemas.json" "functions.py" "python3 -m py_compile $OUTPUT_DIR/functions.py"
     run_test "python" "storage/schemas.json" "storage.py" "python3 -m py_compile $OUTPUT_DIR/storage.py"
-    run_test "python" "realtime/schemas.json" "realtime.py" "python3 -m py_compile $OUTPUT_DIR/realtime.py"
+    run_test "python" "realtime/schemas.json" "realtime.py" "python3 -m py_compile $OUTPUT_DIR/realtime.py" "--overrides specs/realtime/overrides.json"
 
     # Type check with mypy if available
     if command_exists mypy; then
@@ -148,7 +150,7 @@ EOF
     run_test "go" "auth/schemas.json" "auth.go" "cd $OUTPUT_DIR && go build auth.go"
     run_test "go" "functions/schemas.json" "functions.go" "cd $OUTPUT_DIR && go build functions.go"
     run_test "go" "storage/schemas.json" "storage.go" "cd $OUTPUT_DIR && go build storage.go"
-    run_test "go" "realtime/schemas.json" "realtime.go" "cd $OUTPUT_DIR && go build realtime.go"
+    run_test "go" "realtime/schemas.json" "realtime.go" "cd $OUTPUT_DIR && go build realtime.go" "--overrides specs/realtime/overrides.json"
 else
     echo -e "${YELLOW}SKIP${NC} (go not found)"
     SKIPPED=$((SKIPPED + 4))
@@ -165,7 +167,7 @@ if command_exists dart; then
     run_test "dart" "auth/schemas.json" "auth.dart" "dart analyze $OUTPUT_DIR/auth.dart"
     run_test "dart" "functions/schemas.json" "functions.dart" "dart analyze $OUTPUT_DIR/functions.dart"
     run_test "dart" "storage/schemas.json" "storage.dart" "dart analyze $OUTPUT_DIR/storage.dart"
-    run_test "dart" "realtime/schemas.json" "realtime.dart" "dart analyze $OUTPUT_DIR/realtime.dart"
+    run_test "dart" "realtime/schemas.json" "realtime.dart" "dart analyze $OUTPUT_DIR/realtime.dart" "--overrides specs/realtime/overrides.json"
 else
     echo -e "${YELLOW}SKIP${NC} (dart not found)"
     SKIPPED=$((SKIPPED + 4))
@@ -182,7 +184,7 @@ if command_exists swiftc; then
     run_test "swift" "auth/schemas.json" "auth.swift" "swiftc -typecheck $OUTPUT_DIR/auth.swift"
     run_test "swift" "functions/schemas.json" "functions.swift" "swiftc -typecheck $OUTPUT_DIR/functions.swift"
     run_test "swift" "storage/schemas.json" "storage.swift" "swiftc -typecheck $OUTPUT_DIR/storage.swift"
-    run_test "swift" "realtime/schemas.json" "realtime.swift" "swiftc -typecheck $OUTPUT_DIR/realtime.swift"
+    run_test "swift" "realtime/schemas.json" "realtime.swift" "swiftc -typecheck $OUTPUT_DIR/realtime.swift" "--overrides specs/realtime/overrides.json"
 else
     echo -e "${YELLOW}SKIP${NC} (swiftc not found)"
     SKIPPED=$((SKIPPED + 4))
@@ -217,7 +219,7 @@ if command_exists kotlinc; then
     run_test "kotlin" "auth/schemas.json" "auth.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/auth.kt -d $OUTPUT_DIR/auth.jar"
     run_test "kotlin" "functions/schemas.json" "functions.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/functions.kt -d $OUTPUT_DIR/functions.jar"
     run_test "kotlin" "storage/schemas.json" "storage.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/storage.kt -d $OUTPUT_DIR/storage.jar"
-    run_test "kotlin" "realtime/schemas.json" "realtime.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/realtime.kt -d $OUTPUT_DIR/realtime.jar"
+    run_test "kotlin" "realtime/schemas.json" "realtime.kt" "kotlinc -classpath $KOTLIN_CLASSPATH $OUTPUT_DIR/realtime.kt -d $OUTPUT_DIR/realtime.jar" "--overrides specs/realtime/overrides.json"
 else
     echo -e "${YELLOW}SKIP${NC} (kotlinc not found)"
     SKIPPED=$((SKIPPED + 4))
@@ -302,7 +304,8 @@ EOF
     npm run generate -- generate \
         -i "$SCHEMAS_DIR/realtime/schemas.json" \
         -o "$RUST_TEST_DIR/src/lib.rs" \
-        -l rust > /dev/null 2>&1
+        -l rust \
+        --overrides "$SCHEMAS_DIR/realtime/overrides.json" > /dev/null 2>&1
 
     echo -n "Testing rust (realtime/schemas.json)... "
     cd "$RUST_TEST_DIR" && cargo check > /dev/null 2>&1
