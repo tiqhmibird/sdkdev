@@ -53,7 +53,7 @@ export class RustGenerator implements CodeGenerator {
       lines.push('#[serde(rename_all = "kebab-case")]')
       lines.push(`${accessControl}enum ${name} {`)
       for (const value of definition.enum) {
-        const variantName = this.toRustName(value)
+        const variantName = this.toRustName(value, name, options)
         if (variantName !== value) {
           lines.push(`    #[serde(rename = "${value}")]`)
         }
@@ -87,7 +87,8 @@ export class RustGenerator implements CodeGenerator {
         const rustName = this.toSnakeCase(propName)
         const escapedRustName = this.escapeRustKeyword(rustName)
 
-        if (rustName !== propName) {
+        // Add serde rename if the Rust field name differs from the JSON property name
+        if (escapedRustName !== propName) {
           lines.push(`    #[serde(rename = "${propName}")]`)
         }
 
@@ -180,8 +181,17 @@ export class RustGenerator implements CodeGenerator {
     return typeMap[type] || 'serde_json::Value'
   }
 
-  private toRustName(name: string): string {
-    return name
+  private toRustName(name: string, typeName?: string, options?: GeneratorOptions): string {
+    // Check for override first
+    if (typeName && options?.overrides?.enumNames?.[typeName]?.[name]) {
+      const overrideName = options.overrides.enumNames[typeName][name]
+      return overrideName.charAt(0).toUpperCase() + overrideName.slice(1)
+    }
+
+    // Remove any special characters that aren't valid in Rust identifiers
+    const sanitized = name.replace(/[^a-zA-Z0-9_-]/g, '')
+
+    return sanitized
       .split('-')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join('')
@@ -192,11 +202,17 @@ export class RustGenerator implements CodeGenerator {
   }
 
   private escapeRustKeyword(name: string): string {
+    // Special case: 'self' cannot be escaped with r# in Rust
+    // We need to rename it to something else
+    if (name === 'self') {
+      return 'self_'
+    }
+
     // List of Rust keywords that need escaping
     const keywords = new Set([
       'as', 'break', 'const', 'continue', 'crate', 'else', 'enum', 'extern',
       'false', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop', 'match',
-      'mod', 'move', 'mut', 'pub', 'ref', 'return', 'self', 'Self', 'static',
+      'mod', 'move', 'mut', 'pub', 'ref', 'return', 'Self', 'static',
       'struct', 'super', 'trait', 'true', 'type', 'unsafe', 'use', 'where',
       'while', 'async', 'await', 'dyn', 'abstract', 'become', 'box', 'do',
       'final', 'macro', 'override', 'priv', 'typeof', 'unsized', 'virtual', 'yield'

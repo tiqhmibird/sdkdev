@@ -60,7 +60,7 @@ export class KotlinGenerator implements CodeGenerator {
     if (definition.enum) {
       lines.push(`${accessControl}enum class ${name}(val value: String) {`)
       for (const value of definition.enum) {
-        const enumName = value.toUpperCase().replace(/-/g, '_')
+        const enumName = this.toKotlinEnumName(value, name, options)
         lines.push(`    @SerialName("${value}")`)
         lines.push(`    ${enumName}("${value}"),`)
       }
@@ -174,5 +174,16 @@ export class KotlinGenerator implements CodeGenerator {
       return parts[0] + parts.slice(1).map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('')
     }
     return name
+  }
+
+  private toKotlinEnumName(value: string, typeName?: string, options?: GeneratorOptions): string {
+    // Check for override first
+    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
+      return options.overrides.enumNames[typeName][value].toUpperCase()
+    }
+
+    // Remove any special characters that aren't valid in Kotlin identifiers
+    const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '')
+    return sanitized.toUpperCase().replace(/-/g, '_')
   }
 }

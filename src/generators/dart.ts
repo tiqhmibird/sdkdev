@@ -46,7 +46,7 @@ export class DartGenerator implements CodeGenerator {
     if (definition.enum) {
       lines.push(`enum ${typeName} {`)
       for (const value of definition.enum) {
-        const enumName = value.replace(/-/g, '_')
+        const enumName = this.toDartEnumName(value, typeName, options)
         lines.push(`  ${enumName},`)
       }
       lines.push('}')
@@ -198,5 +198,16 @@ export class DartGenerator implements CodeGenerator {
     }
 
     return propName
+  }
+
+  private toDartEnumName(value: string, typeName?: string, options?: GeneratorOptions): string {
+    // Check for override first
+    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
+      return options.overrides.enumNames[typeName][value]
+    }
+
+    // Remove any special characters that aren't valid in Dart identifiers
+    const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '')
+    return sanitized.replace(/-/g, '_')
   }
 }

@@ -109,7 +109,7 @@ export class GoGenerator implements CodeGenerator {
       lines.push('')
       lines.push('const (')
       for (const value of definition.enum) {
-        const constName = this.toConstName(value)
+        const constName = this.toConstName(value, typeName, options)
         lines.push(`    ${typeName}${constName} ${typeName} = "${value}"`)
       }
       lines.push(')')
@@ -224,8 +224,17 @@ export class GoGenerator implements CodeGenerator {
       .join('')
   }
 
-  private toConstName(value: string): string {
-    return value
+  private toConstName(value: string, typeName?: string, options?: GeneratorOptions): string {
+    // Check for override first
+    if (typeName && options?.overrides?.enumNames?.[typeName]?.[value]) {
+      const overrideName = options.overrides.enumNames[typeName][value]
+      return overrideName.charAt(0).toUpperCase() + overrideName.slice(1)
+    }
+
+    // Remove any special characters that aren't valid in Go identifiers
+    const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '')
+
+    return sanitized
       .split('-')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join('')
